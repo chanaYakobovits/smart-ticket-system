@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Date, Time, ForeignKey
+from sqlalchemy.orm import relationship
 from database import Base
 
 
@@ -10,11 +11,16 @@ class Ticket(Base):
     opened_time = Column(Time, nullable=False)
     subject = Column(String(200), nullable=True)
     description = Column(String, nullable=False)
-    category_id = Column(Integer, nullable=False)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     urgency_level = Column(Integer, nullable=False, default=1)
     current_status = Column(String(50), nullable=False, default='פתוח')
     opened_by_user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
-    # הערה: בקוד ה-C# יש גם קשרים (Category, Attachments, Messages,
-    # TicketAssignments, TicketStatusHistories, Aianalyses) - נוסיף אותם
-    # כשנעבוד על המסכים שצריכים אותם (טיפול בפנייה, ניתוח AI וכו')
+    category = relationship("Category", back_populates="tickets")
+    opened_by_user = relationship("User", back_populates="tickets")
+    attachments = relationship("Attachment", back_populates="ticket")
+    messages = relationship("Message", back_populates="ticket")
+    ticket_assignments = relationship("TicketAssignment", back_populates="ticket")
+    ticket_status_histories = relationship("TicketStatusHistory", back_populates="ticket")
+    ticket_closure = relationship("TicketClosure", back_populates="ticket", uselist=False)
+    aianalyses = relationship("Aianalysis", back_populates="ticket")

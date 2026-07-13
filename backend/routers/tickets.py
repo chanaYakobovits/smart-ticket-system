@@ -2,11 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
+from models import User
+from routers.auth_dependency import get_current_user
 from schemas.ticket_dto import TicketDTO, TicketCreateDTO
 from services.ticket_service import TicketService
 
 router = APIRouter(prefix="/api/tickets", tags=["Tickets"])
 
+
+@router.get("/user/{user_id}", response_model=List[TicketDTO])
+def get_by_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="אין הרשאה")
+    return TicketService.get_by_user_id(db, user_id)
 
 @router.get("/user/{user_id}", response_model=List[TicketDTO])
 def get_by_user(user_id: int, db: Session = Depends(get_db)):

@@ -12,11 +12,16 @@ function App() {
       <Routes>
         <Route path="/auth" element={<AuthPages onLoginSuccess={() => console.log('logged in!')} />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/employee">
+        {/* <Route path="/employee">
         <Route path="home" element={<EmployeeHome />} />     
         <Route path="new-ticket" element={<NewTicket />} />  
         <Route path="view-ticket" element={<ViewTicket />} />   
-      </Route>
+      </Route> */}
+        <Route path="/employee" element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+          <Route path="home" element={<EmployeeHome />} />
+          <Route path="new-ticket" element={<NewTicket />} />
+          <Route path="view-ticket" element={<ViewTicket />} />
+        </Route>
         <Route path="/" element={<AuthPages onLoginSuccess={() => console.log('logged in!')} />} />
       </Routes>
     </BrowserRouter>

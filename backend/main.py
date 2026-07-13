@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, tickets  # ← ייבוא של ראוטרים
 from dotenv import load_dotenv
+
 load_dotenv()
 app = FastAPI(title="Smart Ticket System API")
 
