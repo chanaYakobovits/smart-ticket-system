@@ -11,3 +11,19 @@ backend/.env
 # OS files
 .DS_Store
 Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Environment variables
+.env
+*.env
+
+# IDE
+.idea/
+
+# Node
+node_modules/
