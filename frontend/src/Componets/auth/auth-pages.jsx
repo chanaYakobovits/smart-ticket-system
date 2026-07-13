@@ -141,7 +141,7 @@ export default function AuthPages({ onLoginSuccess }) {
       password: registerForm.password,
       user_type_id: registerForm.role,
       department_id: registerForm.department,
-      job_titl: '',
+      job_title: '',
       status: 'active'
     };
 

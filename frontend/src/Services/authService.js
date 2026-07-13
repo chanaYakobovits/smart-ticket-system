@@ -7,15 +7,18 @@ const authService = {
   },
 
   async getUserTypes() {
-    const res = await fetch(`${BASE_URL}/user-types/`);
+    const res = await fetch(`${BASE_URL}/user-types`);
     return await res.json();
   },
 
   async getDepartments() {
-    const res = await fetch(`${BASE_URL}/departments/`);
+    const res = await fetch(`${BASE_URL}/departments`);
     return await res.json();
   },
-
+  async getUsers() {
+    const res = await fetch(BASE_URL, { credentials: 'include' });  
+    return await res.json();
+  },
   async addUser(user) {
     const res = await fetch(`${BASE_URL}/register`, {
       method: 'POST',
