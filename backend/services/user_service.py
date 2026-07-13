@@ -90,8 +90,9 @@ class UserService:
     @classmethod
     def authenticate(cls, db: Session, employee_id_or_email: str, password: str) -> Tuple[bool, str, Optional[UserDTO]]:
         try:
-            user = db.query(User).filter(User.email == employee_id_or_email).first()
-
+            user = db.query(User).filter(
+                (User.email == employee_id_or_email) | (User.employee_id == employee_id_or_email)
+            ).first()
             if not user:
                 return False, "אימייל או סיסמה שגויים", None
 
