@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
+import logger
 from database import get_db
 from schemas.department_dto import DepartmentDTO
 from schemas.userType_dto import UserTypeDTO
@@ -42,9 +44,12 @@ def get_user_types(db: Session = Depends(get_db)):
 def get_departments(db: Session = Depends(get_db)):
     return UserService.get_departments(db)
 @router.post("/forgot-password")
-def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db), login_data=None):
     success, message = UserService.forgot_password(db, request.email, FRONTEND_URL)
     if not success:
+        logger.warning(
+            f"ניסיון התחברות נכשל עבור שם משתמש: {login_data.username}"
+        )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
     return {"success": True, "message": message}
 

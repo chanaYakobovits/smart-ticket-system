@@ -2,7 +2,7 @@ const BASE_URL = 'http://localhost:8000/api/tickets';
 
 const ticketService = {
   async getTicketsByUser(userId) {
-    const res = await fetch(`${BASE_URL}/user/${userId}`, { credentials: 'include' });
+    const res = await fetch(`${BASE_URL}/user/${userId}`, );
     if (!res.ok) throw await res.json();
     return await res.json();
   },

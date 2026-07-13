@@ -7,7 +7,7 @@ const apiClient = async (url, options = {}) => {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
   
-    const res = await fetch(url, { ...options, headers, credentials: "include" });
+    const res = await fetch(url, { ...options, headers });
   
     if (res.status === 401) {
       localStorage.removeItem("token");
