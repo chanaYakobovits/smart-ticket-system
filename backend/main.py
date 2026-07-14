@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, tickets  # ← ייבוא של ראוטרים
+from routers import auth, tickets
 from dotenv import load_dotenv
+from limiter import limiter
 
 load_dotenv()
+
 app = FastAPI(title="Smart Ticket System API")
+app.state.limiter = limiter
 
 # הגדרת CORS עבור React
 app.add_middleware(
@@ -13,7 +16,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# רישום הראוטרים במערכת
 app.include_router(auth.router)
 app.include_router(tickets.router)
 

@@ -89,6 +89,7 @@ export default function AuthPages({ onLoginSuccess }) {
       const response = await authService.login({
         employeeId: loginForm.employeeId,
         password: loginForm.password,
+        rememberMe : loginForm.rememberMe
       });
       if (response?.success) {
         onLoginSuccess?.();

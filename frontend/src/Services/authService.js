@@ -1,10 +1,6 @@
 const BASE_URL = 'http://localhost:8000/api/auth';
 
 const authService = {
-  async getUsers() {
-    const res = await fetch(BASE_URL, { credentials: 'include' });
-    return await res.json();
-  },
 
   async getUserTypes() {
     const res = await fetch(`${BASE_URL}/user-types`);
@@ -16,7 +12,7 @@ const authService = {
     return await res.json();
   },
   async getUsers() {
-    const res = await fetch(BASE_URL, { credentials: 'include' });  
+    const res = await fetch(BASE_URL, { credentials: 'include' });
     return await res.json();
   },
   async addUser(user) {
@@ -29,19 +25,19 @@ const authService = {
     return await res.json();
   },
 
- 
-  async login({ employeeId, password }) {
-    console.log('sending:', { email: employeeId, password });
+
+  async login({ employeeId, password, rememberMe }) {
     const res = await fetch(`${BASE_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: employeeId, password }),
-      
+      body: JSON.stringify({ email: employeeId, password, rememberMe }),
+
     });
     const data = await res.json();
     if (data?.success) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem('token', data.token);
+      storage.setItem('user', JSON.stringify(data.user));
     }
     return data;
   },
@@ -49,10 +45,15 @@ const authService = {
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
   },
 
   getToken() {
-    return localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token') ||
+      sessionStorage.getItem('token');
+    return token;
   },
 
   isLoggedIn() {
@@ -73,7 +74,6 @@ const authService = {
     const res = await fetch(`${BASE_URL}/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // body: JSON.stringify({ token, newPassword }),
       body: JSON.stringify({ token, new_password: newPassword }),
     });
     if (!res.ok) throw await res.json();

@@ -36,12 +36,3 @@ def require_user_type(*allowed_type_ids: int):
         return current_user
     return checker
 
-def require_role(allowed_roles: list[str]):
-    async def role_checker(current_user: User = Depends(get_current_user)):
-        if current_user.user_type.name not in allowed_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FOR_VALIDATION_ERROR,
-                detail="אין לך הרשאה לבצע פעולה זו"
-            )
-        return current_user
-    return role_checker

@@ -22,7 +22,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 #SECRET_KEY = "your-very-secret-jwt-key"  # במציאות שמים בקובץ env.
 #SECRET_KEY = os.getenv("SECRET_KEY")
-SECRET_KEY = os.getenv("SECRET_KEY", "my-secret-key-123")
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY environment variable is not configured."
+    )
+
 ALGORITHM = "HS256"
 
 
@@ -85,7 +91,6 @@ class UserService:
             return []
 
 
-    # 1. פונקציית Authenticate (Login) המקורית שלך
 
     @classmethod
     def authenticate(cls, db: Session, employee_id_or_email: str, password: str) -> Tuple[bool, str, Optional[UserDTO]]:
@@ -100,15 +105,12 @@ class UserService:
                 return False, "אימייל או סיסמה שגויים", None
 
             user_dto = UserDTO.from_orm(user)
-            print(f"🔹 user_dto: {user_dto}")
             token = cls.generate_token(user_dto)
-            print(f"🔹 token: {token}")
 
             return True, token, user_dto
         except Exception as ex:
-            print(f"❌ exception: {str(ex)}")
             return False, f"אירעה שגיאה פנימית: {str(ex)}", None
-    # 2. פונקציית Add (הרשמה / הוספת משתמש)
+
     @classmethod
     def add(cls, db: Session, user_dto: UserCreateDTO) -> Tuple[bool, str, Optional[UserDTO]]:
         # בדיקת חוזק הסיסמה
@@ -142,7 +144,7 @@ class UserService:
 
         return True, "משתמש נוסף בהצלחה.", UserDTO.from_orm(db_user)
 
-    # 3. פונקציית ForgotPassword
+
     @classmethod
     def forgot_password(cls, db: Session, email: str, client_url: str) -> Tuple[bool, str]:
         user = db.query(User).filter(User.email == email).first()
@@ -161,9 +163,14 @@ class UserService:
 
         return True, "אם המייל קיים במערכת, נשלח אליו קישור לאיפוס סיסמה"
 
-    # 4. פונקציית ResetPassword
+
     @classmethod
     def reset_password(cls, db: Session, token: str, new_password: str) -> Tuple[bool, str]:
+
+        password_errors = cls.validate_password(new_password)
+        if password_errors:
+            return False, " | ".join(password_errors)
+
         user = db.query(User).filter(User.reset_password_token == token).first()
 
         if not user or (user.reset_password_token_expiry and user.reset_password_token_expiry < datetime.utcnow()):
@@ -174,9 +181,9 @@ class UserService:
         user.reset_password_token_expiry = None
 
         db.commit()
+
         return True, "הסיסמה עודכנה בהצלחה"
 
-    # 5. פונקציית עזר לשליחת המייל (SendResetEmailAsync)
     @staticmethod
     def send_reset_email(to_email: str, reset_link: str):
         gmail_from = os.getenv("GMAIL_FROM")
