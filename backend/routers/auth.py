@@ -8,6 +8,7 @@ from services.user_service import UserService
 from typing import List
 import os
 from limiter import limiter
+from fastapi import Request
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
@@ -15,9 +16,8 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 @router.post("/login")
 @limiter.limit("5/minute")
-def login(request: LoginRequest, db: Session = Depends(get_db)):
-    # כעת db הוא אובייקט Session אמיתי שמחובר ל-PostgreSQL!
-    success, result, user = UserService.authenticate(db, request.email, request.password)
+def login(request: Request,login_data: LoginRequest, db: Session = Depends(get_db)):
+    success, result, user = UserService.authenticate(db, login_data.email, login_data.password)
 
     if not success:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=result)
@@ -45,8 +45,8 @@ def get_departments(db: Session = Depends(get_db)):
 
 @router.post("/forgot-password")
 @limiter.limit("3/hour")
-def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    success, message = UserService.forgot_password(db, request.email, FRONTEND_URL)
+def forgot_password(request: Request,forgot_request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    success, message = UserService.forgot_password(db, forgot_request.email, FRONTEND_URL)
     if not success:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
     return {"success": True, "message": message}

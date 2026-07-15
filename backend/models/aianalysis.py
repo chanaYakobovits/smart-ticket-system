@@ -14,6 +14,7 @@ class Aianalysis(Base):
     risk_level = Column(String(20), nullable=False)
     analysis_text = Column(String, nullable=False)
     analyzed_at = Column(DateTime, default=datetime.utcnow)
+    suggested_response = Column(String, nullable=True)
 
     ticket = relationship("Ticket", back_populates="aianalyses")
     predicted_category = relationship("Category", back_populates="aianalyses")

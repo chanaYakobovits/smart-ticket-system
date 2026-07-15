@@ -5,7 +5,6 @@ import ticketService from '../../Services/ticketService';
 export default function ViewTicket() {
   const { id } = useParams();
   const navigate = useNavigate();
-
   // סטייט לנתוני הפנייה והמשתמש
   const [ticketId] = useState(Number(id));
   const [userName, setUserName] = useState('');
@@ -71,8 +70,9 @@ export default function ViewTicket() {
 
   // טעינת נתונים ראשונית (נתוני משתמש וקריאת שרת)
   useEffect(() => {
-    // שליפת פרטי המשתמש מ-localStorage
-    const raw = localStorage.getItem('user');
+    const raw =
+    localStorage.getItem("user") ||
+    sessionStorage.getItem("user");
     if (raw) {
       const user = JSON.parse(raw);
       setUserName(`${user.firstName || ''} ${user.lastName || ''}`);

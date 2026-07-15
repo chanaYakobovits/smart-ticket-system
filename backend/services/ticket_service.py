@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
-
+from services.ai_service import AIService
 from models.ticket import Ticket
 from schemas.ticket_dto import TicketDTO, TicketCreateDTO
-
+from models.aianalysis import Aianalysis
 
 class TicketService:
 
@@ -30,12 +30,18 @@ class TicketService:
     def add(db: Session, dto: TicketCreateDTO) -> Tuple[bool, str, Optional[TicketDTO]]:
 
         try:
+            analysis = AIService.analyze_ticket(
+                db=db,
+                subject=dto.subject,
+                description=dto.description
+            )
+
             now = datetime.now()
             db_ticket = Ticket(
                 subject=dto.subject,
                 description=dto.description,
-                category_id=1,
-                urgency_level=1,
+                category_id=analysis["predictedCategoryId"],
+                urgency_level=analysis["urgencyScore"],
                 current_status="פתוח",
                 opened_by_user_id=dto.opened_by_user_id,
                 opened_date=now.date(),
@@ -44,7 +50,21 @@ class TicketService:
             db.add(db_ticket)
             db.commit()
             db.refresh(db_ticket)
+            ai_analysis = Aianalysis(
+                ticket_id=db_ticket.id,
+                predicted_category_id=analysis["predictedCategoryId"],
+                urgency_score=analysis["urgencyScore"],
+                risk_level=analysis["riskLevel"],
+                analysis_text=analysis["analysisText"],
+                suggested_response=analysis["suggestedResponse"]
+            )
+
+            db.add(ai_analysis)
+            db.commit()
+
             return True, "הפנייה נפתחה בהצלחה.", TicketDTO.from_orm(db_ticket)
         except Exception as ex:
             db.rollback()
+            import traceback
+            traceback.print_exc()
             return False, str(ex), None

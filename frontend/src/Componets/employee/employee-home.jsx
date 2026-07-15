@@ -10,11 +10,11 @@ export default function EmployeeHome() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
-
+  const [loading,setLoading]=useState(true);
   const [userName, setUserName] = useState("");
   const [userInitials, setUserInitials] = useState("");
   const [currentUserId, setCurrentUserId] = useState(0);
-
+  const [error,setError]=useState("");
   const [allTickets, setAllTickets] = useState([]);
 
   
@@ -24,11 +24,11 @@ export default function EmployeeHome() {
       const user = JSON.parse(raw);
       setCurrentUserId(user.id);
       setUserName(`${user.first_name ?? ""} ${user.last_name ?? ""}`.trim());
-      setUserInitials(`${user.first_name?.charAt(0) ?? ""}${user.last_name?.charAt(0) ?? ""}`);
+      setUserInitials(
+        `${user.first_name?.charAt(0) ?? ""}${user.last_name?.charAt(0) ?? ""}`
+      );
     }
   }, []);
-
-  // טעינת הפניות ברגע שיש לנו userId
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -36,11 +36,16 @@ export default function EmployeeHome() {
   }, [currentUserId]);
 
   const loadTickets = async () => {
+    setLoading(true);
+  
     try {
       const data = await ticketService.getTicketsByUser(currentUserId);
       setAllTickets(data);
     } catch (err) {
-      console.error("שגיאה בטעינת הפניות", err);
+      console.error(err);
+      setError("אירעה שגיאה בטעינת הפניות");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -60,16 +65,21 @@ export default function EmployeeHome() {
     else if (activeFilter === "pending") filtered = filtered.filter((t) => t.current_status === "בטיפול");
     else if (activeFilter === "resolved") filtered = filtered.filter((t) => t.current_status === "סגור");
 
-    if (searchQuery.trim())
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+ 
       filtered = filtered.filter(
-        (t) => t.subject?.includes(searchQuery) || t.description?.includes(searchQuery)
+        (t) =>
+          (t.subject ?? "").toLowerCase().includes(query) ||
+          (t.description ?? "").toLowerCase().includes(query)
       );
+    }
 
     if (sortBy === "date")
       filtered.sort((a, b) => new Date(b.opened_date).getTime() - new Date(a.opened_date).getTime());
     else if (sortBy === "status")
-      filtered.sort((a, b) => a.currentStatus?.localeCompare(b.currentStatus));
-    else if (sortBy === "urgency") filtered.sort((a, b) => b.urgencyLevel - a.urgencyLevel);
+      filtered.sort((a, b) => a.current_status?.localeCompare(b.current_status));
+    else if (sortBy === "urgency") filtered.sort((a, b) => b.urgency_level  - a.urgency_level );
 
     return filtered;
   }, [allTickets, activeFilter, searchQuery, sortBy]);
@@ -113,7 +123,11 @@ export default function EmployeeHome() {
       default: return "";
     }
   };
-
+  const formatDate = (date) => {
+    if (!date) return "";
+  
+    return new Date(date).toLocaleDateString("he-IL");
+  };
   const previousPage = () => currentPage > 1 && setCurrentPage((p) => p - 1);
   const nextPage = () => currentPage < totalPages && setCurrentPage((p) => p + 1);
   const viewTicket = (id) => navigate(`/employee/view-ticket/${id}`);
@@ -126,6 +140,17 @@ export default function EmployeeHome() {
     sessionStorage.removeItem("token");
     navigate("/auth");
   };
+
+
+  if (loading) {
+    return (
+      <div className="page-wrapper">
+        <h2 style={{ textAlign: "center", marginTop: "100px" }}>
+          טוען פניות...
+        </h2>
+      </div>
+    );
+  }
 
   // Render
   return (
@@ -299,6 +324,7 @@ export default function EmployeeHome() {
                 <option value="status">מיון לפי סטטוס</option>
                 <option value="urgency">מיון לפי דחיפות</option>
               </select>
+              <button className="filter-btn" onClick={loadTickets}> רענן </button>
             </div>
 
             {/* Tickets Table */}
@@ -326,7 +352,7 @@ export default function EmployeeHome() {
                           <div className="ticket-subject">{ticket.subject || "ללא נושא"}</div>
                         </td>
                         <td>
-                          <span className="ticket-date">{ticket.opened_date}</span>
+                          <span className="ticket-date">{formatDate(ticket.opened_date)}</span>
                         </td>
                         <td>
                           <span className={`status-badge ${getStatusClass(ticket.current_status)}`}>

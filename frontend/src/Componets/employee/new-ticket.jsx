@@ -18,13 +18,16 @@ export default function NewTicket() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  useState(() => {
+
+  useEffect(() => {
     const raw = localStorage.getItem("user") || sessionStorage.getItem("user");
     if (raw) {
       const user = JSON.parse(raw);
       setCurrentUserId(user.id);
       setUserName(`${user.first_name ?? ""} ${user.last_name ?? ""}`.trim());
-      setUserInitials(`${user.first_name?.charAt(0) ?? ""}${user.last_name?.charAt(0) ?? ""}`);
+      setUserInitials(
+        `${user.first_name?.charAt(0) ?? ""}${user.last_name?.charAt(0) ?? ""}`
+      );
     }
   }, []);
 
@@ -33,6 +36,7 @@ export default function NewTicket() {
   const isFormInvalid = isMessageInvalid;
 
   const onSubmit = async (e) => {
+    if (isSubmitting) return;
     e.preventDefault();
     setTouched({ message: true });
     if (isFormInvalid) return;
@@ -41,19 +45,29 @@ export default function NewTicket() {
     setSubmitError("");
 
     const payload = {
-      subject: subject || "",
-      description: message,
-      opened_by_user_id: currentUserId,
+      subject: subject.trim() || "",
+      description: message.trim(),
     };
 
+    const formData = new FormData();
+
+    formData.append("subject", subject);
+    formData.append("description", message);
+    
+    uploadedFiles.forEach(file => {
+        formData.append("files", file);
+    });
     try {
-      await ticketService.addTicket(payload);
+      await ticketService.addTicket(formData);
       setSubject("");
       setMessage("");
       setUploadedFiles([]);
       navigate("/employee/home");
     } catch (err) {
-      setSubmitError("אירעה שגיאה בשליחת הפנייה. נסה שנית.");
+      setSubmitError( err.detail ?? "אירעה שגיאה בשליחת הפנייה. נסה שנית.");
+      setTouched({
+        message: false,
+    });
     } finally {
       setIsSubmitting(false);
     }
@@ -146,6 +160,8 @@ export default function NewTicket() {
                   <input
                     type="text"
                     id="subject"
+                    maxLength={100}
+                    disabled={isSubmitting}
                     className="form-input"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
@@ -171,6 +187,7 @@ export default function NewTicket() {
                     className="form-textarea"
                     rows={8}
                     value={message}
+                    disabled={isSubmitting}
                     onChange={(e) => setMessage(e.target.value)}
                     onBlur={() => setTouched({ message: true })}
                     placeholder={`נא לתאר את הפנייה בפירוט...\n\nדוגמה:\nשלום,\nאני מעוניין/ת לקבל הבהרה לגבי חישוב ימי החופשה שלי לשנת 2026.\nלפי התלוש האחרון שלי נותרו לי 15 ימים, אך חשבתי שצריכים להיות לי יותר.\nאשמח אם תוכלו לבדוק ולעדכן אותי.\nתודה!`}
@@ -273,7 +290,7 @@ export default function NewTicket() {
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                       <path d="M18 2L9 11M18 2l-7 16-2-7-7-2 16-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                     </svg>
-                    {isSubmitting ? "שולח..." : "שליחת פנייה"}
+                    {isSubmitting ? "מנתח את הפנייה...\n אנא המתן..." : "מנתח ושולח..."}
                   </button>
                 </div>
               </form>

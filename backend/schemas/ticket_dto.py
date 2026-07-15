@@ -19,7 +19,6 @@ class TicketDTO(BaseModel):
 
 
 class TicketCreateDTO(BaseModel):
-    """מה שנשלח מהלקוח כשפותחים פנייה חדשה - שדות מינימליים בלבד"""
     subject: Optional[str] = None
     description: str
-    opened_by_user_id: int
+   # opened_by_user_id: int

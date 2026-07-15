@@ -8,20 +8,18 @@ from typing import Optional, List, Tuple
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 import os
-
-
 from models.department import Department
 from models.user import User
 from models.userType import UserType
 from schemas.department_dto import DepartmentDTO
 from schemas.userType_dto import UserTypeDTO
 from schemas.user_dto import UserCreateDTO, UserDTO
+from dotenv import load_dotenv
 
-# הגדרות אבטחה להצפנת סיסמאות
+load_dotenv()
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-#SECRET_KEY = "your-very-secret-jwt-key"  # במציאות שמים בקובץ env.
-#SECRET_KEY = os.getenv("SECRET_KEY")
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 if not SECRET_KEY:

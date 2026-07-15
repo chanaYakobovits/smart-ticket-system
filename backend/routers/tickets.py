@@ -36,9 +36,9 @@ def get_by_id(
 def add_ticket(
     dto: TicketCreateDTO,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)   # ← להוסיף
+    current_user: User = Depends(get_current_user)
 ):
-    dto.opened_by_user_id = current_user.id   # ← לאכוף את הזהות מהטוקן, להתעלם מהערך שהלקוח שלח
+    dto.opened_by_user_id = current_user.id
     success, message, data = TicketService.add(db, dto)
     if not success:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message)

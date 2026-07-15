@@ -1,10 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, tickets
 from dotenv import load_dotenv
+load_dotenv()
+from routers import auth, tickets
+
 from limiter import limiter
 
-load_dotenv()
+
 
 app = FastAPI(title="Smart Ticket System API")
 app.state.limiter = limiter
