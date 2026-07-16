@@ -76,11 +76,10 @@ export default function ViewTicket() {
     }
 
     if (!ticketId) return;
-
-    // קריאה לשרת (בהנחה ש-getTicketById מחזיר Promise או פרומיס מסוג אחר, כאן נטפל כ-Promise)
-    // אם ה-service המקורי משתמש ב-RxJS Observable, תצטרך לעשות לו .toPromise() או לשנות את ה-service ל-fetch/axios
-    ticketService.getTicketById(ticketId)
+      ticketService.getTicketById(ticketId)
       .then((ticket) => {
+        setTicketSubject(ticket.subject);
+        setOriginalMessage(ticket.description);
         setStatus(ticket.current_status);
         setStatusClass(getStatusClass(ticket.current_status));
         setUrgency(getUrgencyLabel(ticket.urgency_level));
@@ -96,14 +95,18 @@ export default function ViewTicket() {
         setHandlerInitials(`${assignment.user?.first_name?.charAt(0) ?? ''}${assignment.user?.last_name?.charAt(0) ?? ''}`);
       }
 
-        // קבצים מצורפים
-        const mappedAttachments = (ticket.attachments ?? []).map((a) => ({
+        // קבצים מצורפים - הפרדה בין קבצי ההודעה המקורית לקבצי תגובות
+        const mapAttachment = (a) => ({
           id: a.id,
           name: a.file_name,
           size: `${(a.file_size / 1024).toFixed(2)} KB`,
           url: a.file_url,
-        }));
-        setAttachments(mappedAttachments);
+        });
+
+        const originalAttachments = (ticket.attachments ?? [])
+          .filter((a) => !a.message_id)
+          .map(mapAttachment);
+        setAttachments(originalAttachments);
 
         // היסטוריית סטטוסים
 
@@ -118,26 +121,27 @@ export default function ViewTicket() {
         mappedTimeline.unshift({
           type: 'created',
           title: 'הפנייה נפתחה',
-          time: `${ticket.openedDate} ${ticket.openedTime}`
+          time: `${ticket.opened_date} ${ticket.opened_time}`
         });
         setTimeline(mappedTimeline);
 
-        // תגובות
-        // תגובות
+        // תגובות - כל תגובה מקבלת את הקבצים שצורפו אליה ספציפית
         const mappedResponses = (ticket.messages ?? []).map((m) => ({
           authorInitials: `${m.user?.first_name?.charAt(0) ?? ''}${m.user?.last_name?.charAt(0) ?? ''}`,
           authorName: `${m.user?.first_name ?? ''} ${m.user?.last_name ?? ''}`,
           authorRole: m.user?.job_title || 'עובד',
           date: m.sent_at?.split('T')[0] ?? '',
           time: m.sent_at?.split('T')[1]?.substring(0, 5) ?? '',
-          message: m.content
+          message: m.content,
+          attachments: (ticket.attachments ?? [])
+            .filter((a) => a.message_id === m.id)
+            .map(mapAttachment),
         }));
         setResponses(mappedResponses);
-
-        // עדכון אחרון
         const lastUpd = ticket.ticket_status_history?.length > 0
           ? ticket.ticket_status_history[ticket.ticket_status_history.length - 1].changed_at
           : `${ticket.opened_date}`;
+        setLastUpdate(lastUpd);
       })
       .catch(() => {
         navigate('/employee/home');
@@ -160,9 +164,10 @@ export default function ViewTicket() {
   };
 
   const handlePrintTicket = () => window.print();
+
   const handleShareTicket = () => {};
-  const handleDownloadFile = (fileId) => {
-    const file = attachments.find((f) => f.id === fileId);
+
+  const handleDownloadFile = (file) => {
     if (!file?.url) return;
     window.open(`${SERVER_URL}${file.url}`, '_blank');
   };
@@ -179,23 +184,30 @@ export default function ViewTicket() {
       const response = await ticketService.addMessage(ticketId, comment.trim(), commentFiles);
       const updatedTicket = response.ticket;
 
+      const mapAttachment = (a) => ({
+        id: a.id,
+        name: a.file_name,
+        size: `${(a.file_size / 1024).toFixed(2)} KB`,
+        url: a.file_url,
+      });
+
       const mappedResponses = (updatedTicket.messages ?? []).map((m) => ({
         authorInitials: `${m.user?.first_name?.charAt(0) ?? ''}${m.user?.last_name?.charAt(0) ?? ''}`,
         authorName: `${m.user?.first_name ?? ''} ${m.user?.last_name ?? ''}`,
         authorRole: m.user?.job_title || 'עובד',
         date: m.sent_at?.split('T')[0] ?? '',
         time: m.sent_at?.split('T')[1]?.substring(0, 5) ?? '',
-        message: m.content
+        message: m.content,
+        attachments: (updatedTicket.attachments ?? [])
+          .filter((a) => a.message_id === m.id)
+          .map(mapAttachment),
       }));
       setResponses(mappedResponses);
 
-      const mappedAttachments = (updatedTicket.attachments ?? []).map((a) => ({
-        id: a.id,
-        name: a.file_name,
-        size: `${(a.file_size / 1024).toFixed(2)} KB`,
-        url: a.file_url,
-      }));
-      setAttachments(mappedAttachments);
+      const originalAttachments = (updatedTicket.attachments ?? [])
+        .filter((a) => !a.message_id)
+        .map(mapAttachment);
+      setAttachments(originalAttachments);
 
       if (response.rejected_files?.length > 0) {
         const names = response.rejected_files.map(f => `${f.file_name} (${f.reason})`).join(", ");
@@ -311,7 +323,7 @@ export default function ViewTicket() {
                           <div className="attachment-name">{file.name}</div>
                           <div className="attachment-size">{file.size}</div>
                         </div>
-                        <button className="attachment-download" onClick={() => handleDownloadFile(file.id)}>
+                        <button className="attachment-download" onClick={() => handleDownloadFile(file)}>
                           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                             <path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                           </svg>
@@ -369,6 +381,39 @@ export default function ViewTicket() {
                     <div className="message-content">
                       <p>{response.message}</p>
                     </div>
+
+                    {response.attachments?.length > 0 && (
+                      <div className="message-attachments">
+                        <div className="attachments-title">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8.5 1.5L3 7l5.5 5.5L14 7 8.5 1.5z" stroke="currentColor"/>
+                            <path d="M3 12l3 3" stroke="currentColor" strokeLinecap="round"/>
+                          </svg>
+                          קבצים מצורפים
+                        </div>
+                        <div className="attachments-list">
+                          {response.attachments.map((file) => (
+                            <div className="attachment-item" key={file.id}>
+                              <div className="attachment-icon">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                  <path d="M11 2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7l-6-5z" stroke="currentColor"/>
+                                  <path d="M11 2v5h6" stroke="currentColor"/>
+                                </svg>
+                              </div>
+                              <div className="attachment-info">
+                                <div className="attachment-name">{file.name}</div>
+                                <div className="attachment-size">{file.size}</div>
+                              </div>
+                              <button className="attachment-download" onClick={() => handleDownloadFile(file)}>
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                  <path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

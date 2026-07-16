@@ -37,6 +37,7 @@ export default function EmployeeHome() {
 
   const loadTickets = async () => {
     setLoading(true);
+    setError("");
   
     try {
       const data = await ticketService.getTicketsByUser(currentUserId);
@@ -213,7 +214,12 @@ export default function EmployeeHome() {
 
         {/* Main Content */}
         <main className="main-content">
-          <div className="content-container">
+        <div className="content-container">
+          {error && (
+            <div className="alert error show" style={{ marginBottom: "24px" }}>
+              {error}
+            </div>
+          )}
             {/* Page Header */}
             <div className="page-header">
               <div className="page-header-right">
@@ -366,7 +372,13 @@ export default function EmployeeHome() {
                           </span>
                         </td>
                         <td>
-                          <span className="no-handler">טרם שויך</span>
+                          {ticket.ticket_assignment?.length > 0 ? (
+                            <span className="handler-name">
+                              {ticket.ticket_assignment[0].user?.first_name} {ticket.ticket_assignment[0].user?.last_name}
+                            </span>
+                          ) : (
+                            <span className="no-handler">טרם שויך</span>
+                          )}
                         </td>
                         <td>
                           <button className="action-btn" onClick={() => viewTicket(ticket.id)}>

@@ -298,7 +298,7 @@ export default function NewTicket() {
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                       <path d="M18 2L9 11M18 2l-7 16-2-7-7-2 16-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                     </svg>
-                    {isSubmitting ? "מנתח את הפנייה...\n אנא המתן..." : "מנתח ושולח..."}
+                    {isSubmitting ? "מנתח ושולח..." : "שליחת פנייה"}
                   </button>
                 </div>
               </form>

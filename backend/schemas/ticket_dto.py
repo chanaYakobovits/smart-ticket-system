@@ -99,9 +99,10 @@ class TicketDTO(BaseModel):
     opened_date: Optional[date] = None
     opened_time: Optional[time] = None
 
+    ticket_assignment: List[AssignmentDTO] = Field(default_factory=list)
+
     class Config:
         from_attributes = True
-
 
 
 class TicketCreateDTO(BaseModel):

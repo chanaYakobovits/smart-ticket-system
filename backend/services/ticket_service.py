@@ -18,6 +18,9 @@ class TicketService:
         try:
             tickets = (
                 db.query(Ticket)
+                .options(
+                    joinedload(Ticket.ticket_assignment).joinedload(TicketAssignment.user)
+                )
                 .filter(Ticket.opened_by_user_id == user_id)
                 .order_by(Ticket.opened_date.desc())
                 .all()
