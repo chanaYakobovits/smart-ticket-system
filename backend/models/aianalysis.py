@@ -5,16 +5,16 @@ from database import Base
 
 
 class Aianalysis(Base):
-    __tablename__ = "ai_analyses"
+    __tablename__ = "ai_analysis"
 
     id = Column(Integer, primary_key=True, index=True)
     ticket_id = Column(Integer, ForeignKey("tickets.id"), nullable=False)
     predicted_category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
-    urgency_score = Column(Numeric(3, 1), nullable=False)
+    urgency_score = Column(Integer, nullable=False)
     risk_level = Column(String(20), nullable=False)
     analysis_text = Column(String, nullable=False)
     analyzed_at = Column(DateTime, default=datetime.utcnow)
     suggested_response = Column(String, nullable=True)
 
-    ticket = relationship("Ticket", back_populates="aianalyses")
-    predicted_category = relationship("Category", back_populates="aianalyses")
+    ticket = relationship("Ticket", back_populates="ai_analysis")
+    predicted_category = relationship("Category", back_populates="ai_analysis")

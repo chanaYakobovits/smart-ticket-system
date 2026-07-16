@@ -25,5 +25,5 @@ class User(Base):
     tickets = relationship("Ticket", back_populates="opened_by_user")
     attachments = relationship("Attachment", back_populates="uploaded_by_user")
     messages = relationship("Message", back_populates="user")
-    ticket_assignments = relationship("TicketAssignment", back_populates="user")
-    ticket_status_histories = relationship("TicketStatusHistory", back_populates="changed_by_user")
+    ticket_assignment = relationship("TicketAssignment", back_populates="user")
+    ticket_status_history = relationship("TicketStatusHistory", back_populates="changed_by_user")

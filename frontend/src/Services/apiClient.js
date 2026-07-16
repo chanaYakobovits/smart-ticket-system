@@ -1,8 +1,9 @@
 const apiClient = async (url, options = {}) => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-  
+    const isFormData = options.body instanceof FormData;
+    
     const headers = {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(options.headers || {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };

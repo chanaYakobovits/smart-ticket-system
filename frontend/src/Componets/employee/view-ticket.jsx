@@ -97,8 +97,8 @@ export default function ViewTicket() {
         setCanClose(ticket.currentStatus !== 'סגור');
 
         // מטפל
-        if (ticket.ticketAssignments?.length > 0) {
-          const assignment = ticket.ticketAssignments[0];
+        if (ticket.ticket_assignments?.length > 0) {
+          const assignment = ticket.ticket_assignments[0];
           setHandler(`${assignment.user?.firstName ?? ''} ${assignment.user?.lastName ?? ''}`);
           setHandlerInitials(`${assignment.user?.firstName?.charAt(0) ?? ''}${assignment.user?.lastName?.charAt(0) ?? ''}`);
         }
@@ -112,7 +112,7 @@ export default function ViewTicket() {
         setAttachments(mappedAttachments);
 
         // היסטוריית סטטוסים
-        const mappedTimeline = (ticket.ticketStatusHistories ?? []).map((h) => ({
+        const mappedTimeline = (ticket.ticket_status_histories ?? []).map((h) => ({
           type: 'status',
           title: `סטטוס שונה ל: ${h.newStatus}`,
           time: h.changedAt,
@@ -139,8 +139,8 @@ export default function ViewTicket() {
         setResponses(mappedResponses);
 
         // עדכון אחרון
-        const lastUpd = ticket.ticketStatusHistories?.length > 0
-          ? ticket.ticketStatusHistories[ticket.ticketStatusHistories.length - 1].changedAt
+        const lastUpd = ticket.ticket_status_histories?.length > 0
+          ? ticket.ticket_status_histories[ticket.ticket_status_histories.length - 1].changedAt
           : `${ticket.openedDate}`;
         setLastUpdate(lastUpd);
       })

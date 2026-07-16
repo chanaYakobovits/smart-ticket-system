@@ -14,6 +14,6 @@ class Attachment(Base):
     file_type = Column(String(50), nullable=False)
     file_url = Column(String(500), nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
-
+    file_size = Column(Integer, nullable=True)
     ticket = relationship("Ticket", back_populates="attachments")
     uploaded_by_user = relationship("User", back_populates="attachments")

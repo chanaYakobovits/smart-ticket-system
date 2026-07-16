@@ -5,7 +5,7 @@ from database import Base
 
 
 class TicketStatusHistory(Base):
-    __tablename__ = "ticket_status_histories"
+    __tablename__ = "ticket_status_history"
 
     id = Column(Integer, primary_key=True, index=True)
     ticket_id = Column(Integer, ForeignKey("tickets.id"), nullable=False)
@@ -15,5 +15,5 @@ class TicketStatusHistory(Base):
     changed_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     comment = Column(String, nullable=True)
 
-    ticket = relationship("Ticket", back_populates="ticket_status_histories")
-    changed_by_user = relationship("User", back_populates="ticket_status_histories")
+    ticket = relationship("Ticket", back_populates="ticket_status_history")
+    changed_by_user = relationship("User", back_populates="ticket_status_history")

@@ -11,4 +11,4 @@ class Category(Base):
 
     tickets = relationship("Ticket", back_populates="category")
     slas = relationship("Sla", back_populates="category")
-    aianalyses = relationship("Aianalysis", back_populates="predicted_category")
+    ai_analysis = relationship("Aianalysis",back_populates="predicted_category")
