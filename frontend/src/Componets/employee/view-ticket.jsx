@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ticketService from '../../Services/ticketService';
+import { SERVER_URL } from '../../Services/config';
 
 export default function ViewTicket() {
   const { id } = useParams();
   const navigate = useNavigate();
-  // סטייט לנתוני הפנייה והמשתמש
   const [ticketId] = useState(Number(id));
   const [userName, setUserName] = useState('');
   const [userInitials, setUserInitials] = useState('');
-  
   const [ticketSubject, setTicketSubject] = useState('');
   const [originalMessage, setOriginalMessage] = useState('');
   const [status, setStatus] = useState('');
@@ -21,27 +20,24 @@ export default function ViewTicket() {
   const [createdTime, setCreatedTime] = useState('');
   const [canClose, setCanClose] = useState(false);
   const [lastUpdate, setLastUpdate] = useState('');
-
   const [handler, setHandler] = useState('');
   const [handlerInitials, setHandlerInitials] = useState('');
-
-  // SLA ערכי ברירת מחדל
   const [slaPercentage] = useState(0);
   const [slaStatus] = useState('sla-ok');
   const [slaRemaining] = useState('לא ידוע');
   const [slaTarget] = useState('לא ידוע');
-
   const [attachments, setAttachments] = useState([]);
   const [timeline, setTimeline] = useState([]);
   const [responses, setResponses] = useState([]);
-
-  // סטייט עבור הטופס
   const [comment, setComment] = useState('');
+  const [commentFiles, setCommentFiles] = useState([]);
+  const fileInputRef = useRef(null);
+  const [commentError, setCommentError] = useState('');
 
   // פונקציות עזר להמרת סטטוסים ודחיפות
   const getStatusClass = (statusStr) => {
     switch (statusStr) {
-      case 'פתוח': return 'status-open';
+      case 'חדשה': return 'status-open';
       case 'בטיפול': return 'status-pending';
       case 'סגור': return 'status-resolved';
       default: return '';
@@ -75,8 +71,8 @@ export default function ViewTicket() {
     sessionStorage.getItem("user");
     if (raw) {
       const user = JSON.parse(raw);
-      setUserName(`${user.firstName || ''} ${user.lastName || ''}`);
-      setUserInitials(`${user.firstName?.charAt(0) ?? ''}${user.lastName?.charAt(0) ?? ''}`);
+      setUserName(`${user.first_name || ''} ${user.last_name || ''}`);
+      setUserInitials(`${user.first_name?.charAt(0) ?? ''}${user.last_name?.charAt(0) ?? ''}`);
     }
 
     if (!ticketId) return;
@@ -85,37 +81,36 @@ export default function ViewTicket() {
     // אם ה-service המקורי משתמש ב-RxJS Observable, תצטרך לעשות לו .toPromise() או לשנות את ה-service ל-fetch/axios
     ticketService.getTicketById(ticketId)
       .then((ticket) => {
-        setTicketSubject(ticket.subject || 'ללא נושא');
-        setOriginalMessage(ticket.description);
-        setStatus(ticket.currentStatus);
-        setStatusClass(getStatusClass(ticket.currentStatus));
-        setUrgency(getUrgencyLabel(ticket.urgencyLevel));
-        setUrgencyClass(getUrgencyClass(ticket.urgencyLevel));
-        setCategory(ticket.category?.categoryName || 'לא ידוע');
-        setCreatedDate(ticket.openedDate);
-        setCreatedTime(ticket.openedTime);
-        setCanClose(ticket.currentStatus !== 'סגור');
-
+        setStatus(ticket.current_status);
+        setStatusClass(getStatusClass(ticket.current_status));
+        setUrgency(getUrgencyLabel(ticket.urgency_level));
+        setUrgencyClass(getUrgencyClass(ticket.urgency_level));
+        setCategory(ticket.category?.category_name || 'לא ידוע');
+        setCreatedDate(ticket.opened_date);
+        setCreatedTime(ticket.opened_time);
+        setCanClose(ticket.current_status !== 'סגור');
         // מטפל
-        if (ticket.ticket_assignments?.length > 0) {
-          const assignment = ticket.ticket_assignments[0];
-          setHandler(`${assignment.user?.firstName ?? ''} ${assignment.user?.lastName ?? ''}`);
-          setHandlerInitials(`${assignment.user?.firstName?.charAt(0) ?? ''}${assignment.user?.lastName?.charAt(0) ?? ''}`);
-        }
+      if (ticket.ticket_assignment?.length > 0) {
+        const assignment = ticket.ticket_assignment[0];
+        setHandler(`${assignment.user?.first_name ?? ''} ${assignment.user?.last_name ?? ''}`);
+        setHandlerInitials(`${assignment.user?.first_name?.charAt(0) ?? ''}${assignment.user?.last_name?.charAt(0) ?? ''}`);
+      }
 
         // קבצים מצורפים
         const mappedAttachments = (ticket.attachments ?? []).map((a) => ({
           id: a.id,
-          name: a.fileName,
-          size: `${(a.fileSize / 1024).toFixed(2)} KB`
+          name: a.file_name,
+          size: `${(a.file_size / 1024).toFixed(2)} KB`,
+          url: a.file_url,
         }));
         setAttachments(mappedAttachments);
 
         // היסטוריית סטטוסים
-        const mappedTimeline = (ticket.ticket_status_histories ?? []).map((h) => ({
+
+        const mappedTimeline = (ticket.ticket_status_history ?? []).map((h) => ({
           type: 'status',
-          title: `סטטוס שונה ל: ${h.newStatus}`,
-          time: h.changedAt,
+          title: `סטטוס שונה ל: ${h.new_status}`,
+          time: h.changed_at,
           description: h.comment
         }));
 
@@ -128,21 +123,21 @@ export default function ViewTicket() {
         setTimeline(mappedTimeline);
 
         // תגובות
+        // תגובות
         const mappedResponses = (ticket.messages ?? []).map((m) => ({
-          authorInitials: `${m.user?.firstName?.charAt(0) ?? ''}${m.user?.lastName?.charAt(0) ?? ''}`,
-          authorName: `${m.user?.firstName ?? ''} ${m.user?.lastName ?? ''}`,
-          authorRole: m.user?.jobTitle || 'עובד',
-          date: m.sentAt?.split('T')[0] ?? '',
-          time: m.sentAt?.split('T')[1]?.substring(0, 5) ?? '',
+          authorInitials: `${m.user?.first_name?.charAt(0) ?? ''}${m.user?.last_name?.charAt(0) ?? ''}`,
+          authorName: `${m.user?.first_name ?? ''} ${m.user?.last_name ?? ''}`,
+          authorRole: m.user?.job_title || 'עובד',
+          date: m.sent_at?.split('T')[0] ?? '',
+          time: m.sent_at?.split('T')[1]?.substring(0, 5) ?? '',
           message: m.content
         }));
         setResponses(mappedResponses);
 
         // עדכון אחרון
-        const lastUpd = ticket.ticket_status_histories?.length > 0
-          ? ticket.ticket_status_histories[ticket.ticket_status_histories.length - 1].changedAt
-          : `${ticket.openedDate}`;
-        setLastUpdate(lastUpd);
+        const lastUpd = ticket.ticket_status_history?.length > 0
+          ? ticket.ticket_status_history[ticket.ticket_status_history.length - 1].changed_at
+          : `${ticket.opened_date}`;
       })
       .catch(() => {
         navigate('/employee/home');
@@ -151,20 +146,70 @@ export default function ViewTicket() {
 
   // פונקציות אירועים
   const handleGoBack = () => navigate('/employee/home');
-  const handleAttachFile = () => {};
+  const handleAttachFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const onCommentFileSelect = (e) => {
+    const files = e.target.files;
+    if (files) setCommentFiles((prev) => [...prev, ...Array.from(files)]);
+  };
+
+  const removeCommentFile = (index) => {
+    setCommentFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handlePrintTicket = () => window.print();
   const handleShareTicket = () => {};
-  const handleDownloadFile = (fileId) => {};
-  
+  const handleDownloadFile = (fileId) => {
+    const file = attachments.find((f) => f.id === fileId);
+    if (!file?.url) return;
+    window.open(`${SERVER_URL}${file.url}`, '_blank');
+  };
+
   const handleCloseTicket = () => {
     console.log('סגירת פנייה', ticketId);
   };
 
-  const handleSubmitComment = (e) => {
+  const handleSubmitComment = async (e) => {
     e.preventDefault();
     if (!comment.trim()) return;
-    console.log('תגובה:', comment);
-    setComment('');
+
+    try {
+      const response = await ticketService.addMessage(ticketId, comment.trim(), commentFiles);
+      const updatedTicket = response.ticket;
+
+      const mappedResponses = (updatedTicket.messages ?? []).map((m) => ({
+        authorInitials: `${m.user?.first_name?.charAt(0) ?? ''}${m.user?.last_name?.charAt(0) ?? ''}`,
+        authorName: `${m.user?.first_name ?? ''} ${m.user?.last_name ?? ''}`,
+        authorRole: m.user?.job_title || 'עובד',
+        date: m.sent_at?.split('T')[0] ?? '',
+        time: m.sent_at?.split('T')[1]?.substring(0, 5) ?? '',
+        message: m.content
+      }));
+      setResponses(mappedResponses);
+
+      const mappedAttachments = (updatedTicket.attachments ?? []).map((a) => ({
+        id: a.id,
+        name: a.file_name,
+        size: `${(a.file_size / 1024).toFixed(2)} KB`,
+        url: a.file_url,
+      }));
+      setAttachments(mappedAttachments);
+
+      if (response.rejected_files?.length > 0) {
+        const names = response.rejected_files.map(f => `${f.file_name} (${f.reason})`).join(", ");
+        setCommentError(`שימי לב: חלק מהקבצים לא צורפו - ${names}`);
+      } else {
+        setCommentError('');
+      }
+
+      setComment('');
+      setCommentFiles([]);
+    } catch (err) {
+      console.error('שגיאה בשליחת תגובה:', err);
+      setCommentError(err?.detail ?? 'אירעה שגיאה בשליחת התגובה');
+    }
   };
 
   return (
@@ -332,6 +377,7 @@ export default function ViewTicket() {
             {/* Add Comment */}
             <div className="add-comment-section">
               <h3 className="comment-title">הוספת תגובה</h3>
+
               <form onSubmit={handleSubmitComment}>
                 <textarea 
                   className="comment-textarea"
@@ -340,7 +386,34 @@ export default function ViewTicket() {
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                 ></textarea>
-                
+
+                <input
+                  type="file"
+                  multiple
+                  ref={fileInputRef}
+                  onChange={onCommentFileSelect}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls"
+                  style={{ display: 'none' }}
+                />
+
+                {commentFiles.length > 0 && (
+                  <div className="files-list">
+                    {commentFiles.map((file, i) => (
+                      <div className="file-item" key={`${file.name}-${i}`}>
+                        <div className="file-info">
+                          <div className="file-name">{file.name}</div>
+                          <div className="file-size">{(file.size / 1024).toFixed(2)} KB</div>
+                        </div>
+                        <button type="button" className="file-remove" onClick={() => removeCommentFile(i)}>
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {commentError && <span className="error-message">{commentError}</span>}
                 <div className="comment-actions">
                   <button type="button" className="btn-attach" onClick={handleAttachFile}>
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">

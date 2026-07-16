@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field,field_validator
 from datetime import date, time, datetime
 from typing import Optional, List
 
@@ -16,18 +16,23 @@ class AttachmentDTO(BaseModel):
     file_name: str
     file_type: str
     file_url: str
+    file_size: Optional[int] = None
+    message_id: Optional[int] = None
 
     class Config:
         from_attributes = True
 
+class RejectedFileDTO(BaseModel):
+    file_name: str
+    reason: str
 
 class MessageUserDTO(BaseModel):
     first_name: str
     last_name: str
+    job_title: Optional[str] = None
 
     class Config:
         from_attributes = True
-
 
 class MessageDTO(BaseModel):
     id: int
@@ -37,6 +42,7 @@ class MessageDTO(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 
 class AssignmentUserDTO(BaseModel):
@@ -86,7 +92,7 @@ class TicketDTO(BaseModel):
     category_id: int
     urgency_level: int
 
-    current_status: str = "פתוח"
+    current_status: str = "חדשה"
 
     opened_by_user_id: int
 
@@ -100,7 +106,14 @@ class TicketDTO(BaseModel):
 
 class TicketCreateDTO(BaseModel):
     subject: Optional[str] = None
-    description: str
+    description: str = Field(..., min_length=10)
+
+    @field_validator("description")
+    @classmethod
+    def description_must_have_real_content(cls, v: str) -> str:
+        if len(v.strip()) < 10:
+            raise ValueError("תיאור הפנייה חייב להכיל לפחות 10 תווים")
+        return v
 
 
 
@@ -118,6 +131,13 @@ class TicketDetailsDTO(TicketDTO):
 
     ai_analysis: Optional[AIAnalysisDTO] = None
 
+
+    class Config:
+        from_attributes = True
+
+class AddMessageResponseDTO(BaseModel):
+    ticket: TicketDetailsDTO
+    rejected_files: List[RejectedFileDTO] = Field(default_factory=list)
 
     class Config:
         from_attributes = True

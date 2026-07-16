@@ -15,3 +15,4 @@ class Message(Base):
 
     ticket = relationship("Ticket", back_populates="messages")
     user = relationship("User", back_populates="messages")
+    attachments = relationship("Attachment", back_populates="message")

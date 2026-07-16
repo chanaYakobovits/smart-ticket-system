@@ -13,7 +13,7 @@ class Ticket(Base):
     description = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     urgency_level = Column(Integer, nullable=False)
-    current_status = Column(String(50), nullable=False, default='פתוח')
+    current_status = Column(String(50), nullable=False, default='חדשה')
     opened_by_user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
     category = relationship("Category", back_populates="tickets")

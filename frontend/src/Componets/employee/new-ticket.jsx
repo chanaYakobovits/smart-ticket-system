@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ticketService from "../../Services/ticketService";
 
@@ -17,7 +17,7 @@ export default function NewTicket() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-
+  const [rejectedFiles, setRejectedFiles] = useState([]);
 
   useEffect(() => {
     const raw = localStorage.getItem("user") || sessionStorage.getItem("user");
@@ -58,7 +58,15 @@ export default function NewTicket() {
         formData.append("files", file);
     });
     try {
-      await ticketService.addTicket(formData);
+      const response = await ticketService.addTicket(formData);
+      if (response?.rejected_files?.length > 0) {
+        // מציגים למשתמש אילו קבצים נדחו, לפני שממשיכים
+        const names = response.rejected_files.map(f => `${f.file_name} (${f.reason})`).join(", ");
+        setSubmitError(`שימי לב: חלק מהקבצים לא הועלו - ${names}`);
+        setRejectedFiles(response.rejected_files);
+        setIsSubmitting(false);
+        return; 
+      }
       setSubject("");
       setMessage("");
       setUploadedFiles([]);

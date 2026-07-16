@@ -1,12 +1,11 @@
 from datetime import datetime
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import joinedload
-from schemas.ticket_dto import TicketDTO, TicketCreateDTO, TicketDetailsDTO
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from services.ai_service import AIService
 from models.ticket import Ticket
-from schemas.ticket_dto import TicketDTO, TicketCreateDTO
+from schemas.ticket_dto import TicketDTO, TicketCreateDTO,TicketDetailsDTO ,MessageDTO as MessageOutputDTO
 from models.aianalysis import Aianalysis
 from services.attachment_service import AttachmentService
 from models.message import Message
@@ -50,7 +49,8 @@ class TicketService:
         return TicketDetailsDTO.from_orm(ticket)
 
     @staticmethod
-    async def add(db: Session, dto: TicketCreateDTO, user_id: int, files: List[UploadFile] = None, ) -> Tuple[bool, str, Optional[TicketDTO]]:
+    async def add(db: Session, dto: TicketCreateDTO, user_id: int, files: List[UploadFile] = None, ) -> Tuple[
+        bool, str, Optional[TicketDTO], List[dict]]:
         try:
             analysis = AIService.analyze_ticket(
                 db=db,
@@ -63,7 +63,7 @@ class TicketService:
                 description=dto.description,
                 category_id=analysis["predictedCategoryId"],
                 urgency_level=analysis["urgencyScore"],
-                current_status="פתוח",
+                current_status="חדשה",
                 opened_by_user_id=user_id,
                 opened_date=now.date(),
                 opened_time=now.time(),
@@ -84,12 +84,43 @@ class TicketService:
             db.add(ai_analysis)
             db.commit()
 
+            rejected_files: List[dict] = []
             if files:
-                await AttachmentService.save_files(db, db_ticket.id, user_id, files)
+                _, rejected_files = await AttachmentService.save_files(db, db_ticket.id, user_id, files)
 
-            return True, "הפנייה נפתחה בהצלחה.", TicketDTO.from_orm(db_ticket)
+            return True, "הפנייה נפתחה בהצלחה.", TicketDTO.from_orm(db_ticket), rejected_files
         except Exception as ex:
             db.rollback()
             import traceback
             traceback.print_exc()
-            return False, str(ex), None
+            return False, str(ex), None, []
+
+    @staticmethod
+    async def add_message(
+            db: Session, ticket_id: int, user_id: int, content: str, files: List[UploadFile] = None
+    ) -> Tuple[bool, str, Optional[TicketDetailsDTO], List[dict]]:
+        try:
+            ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+            if not ticket:
+                return False, "הפנייה לא נמצאה", None, []
+
+            new_message = Message(
+                ticket_id=ticket_id,
+                user_id=user_id,
+                content=content
+            )
+            db.add(new_message)
+            db.commit()
+            db.refresh(new_message)
+
+            rejected_files: List[dict] = []
+            if files:
+                _, rejected_files = await AttachmentService.save_files(
+                    db, ticket_id, user_id, files, message_id=new_message.id
+                )
+
+            updated_ticket = TicketService.get_by_id(db, ticket_id)
+            return True, "התגובה נוספה בהצלחה", updated_ticket, rejected_files
+        except Exception as ex:
+            db.rollback()
+            return False, str(ex), None, []

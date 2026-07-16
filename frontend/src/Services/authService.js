@@ -1,4 +1,6 @@
-const BASE_URL = 'http://localhost:8000/api/auth';
+import { API_URL } from './config';
+
+const BASE_URL = `${API_URL}/auth`;
 
 const authService = {
 

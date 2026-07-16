@@ -52,7 +52,7 @@ export default function EmployeeHome() {
   // סטטיסטיקות
   const totalTickets = allTickets.length;
   const pendingTickets = allTickets.filter(
-    (t) => t.current_status === "פתוח" || t.current_status === "בטיפול"
+    (t) => t.current_status === "חדשה" || t.current_status === "בטיפול"
   ).length;
   const resolvedTickets = allTickets.filter((t) => t.current_status === "סגור").length;
   const urgentTickets = allTickets.filter((t) => t.urgency_level >= 4).length;
@@ -61,7 +61,7 @@ export default function EmployeeHome() {
   const tickets = useMemo(() => {
     let filtered = [...allTickets];
 
-    if (activeFilter === "open") filtered = filtered.filter((t) => t.current_status === "פתוח");
+    if (activeFilter === "open") filtered = filtered.filter((t) => t.current_status === "חדשה");
     else if (activeFilter === "pending") filtered = filtered.filter((t) => t.current_status === "בטיפול");
     else if (activeFilter === "resolved") filtered = filtered.filter((t) => t.current_status === "סגור");
 
@@ -97,7 +97,7 @@ export default function EmployeeHome() {
   // Helpers
   const getStatusClass = (status) => {
     switch (status) {
-      case "פתוח": return "status-open";
+      case "חדשה": return "status-open";
       case "בטיפול": return "status-pending";
       case "סגור": return "status-resolved";
       default: return "";
@@ -309,7 +309,7 @@ export default function EmployeeHome() {
                   הכל
                 </button>
                 <button className={`filter-btn${activeFilter === "open" ? " active" : ""}`} onClick={() => setActiveFilter("open")}>
-                  פתוחות
+                  חדשות
                 </button>
                 <button className={`filter-btn${activeFilter === "pending" ? " active" : ""}`} onClick={() => setActiveFilter("pending")}>
                   בטיפול
